@@ -109,22 +109,28 @@ def with_deployment_env(deployment_id, version, force_restart,
 
 
 def check_agents_alive(deployment_id, deployment, version):
-    with with_deployment_env(deployment_id, version, force_restart=False,
-                             raise_on_wait_failure=False):
-        dep_res = {}
-        dep_res['workflows_worker_alive'] = _check_alive(
-            '{0}_workflows'.format(deployment_id), version)
-        dep_res['operations_worker_alive'] = _check_alive(
-            deployment_id, version)
-        dep_res['agents_alive'] = {}
-        dep_alive = dep_res['workflows_worker_alive'] and dep_res[
-            'operations_worker_alive']
-        agents = deployment['agents'].keys()
-        for agent in agents:
-            agent_alive = _check_alive(agent, version)
-            dep_res['agents_alive'][agent] = agent_alive
-            dep_alive = dep_alive and agent_alive
-        return dep_res, dep_alive
+   try:
+       with with_deployment_env(deployment_id, version, force_restart=False,
+                                raise_on_wait_failure=False):
+           dep_res = {}
+           dep_res['workflows_worker_alive'] = _check_alive(
+               '{0}_workflows'.format(deployment_id), version)
+           dep_res['operations_worker_alive'] = _check_alive(
+               deployment_id, version)
+           dep_res['agents_alive'] = {}
+           dep_alive = dep_res['workflows_worker_alive'] and dep_res[
+               'operations_worker_alive']
+           agents = deployment['agents'].keys()
+           for agent in agents:
+               agent_alive = _check_alive(agent, version)
+               dep_res['agents_alive'][agent] = agent_alive
+               dep_alive = dep_alive and agent_alive
+           return dep_res, dep_alive
+   except RuntimeError as err:
+       dep_res = {
+           'error': str(type(err)) + ': ' + str(err),
+       }
+       return dep_res, False
 
 
 def check_vm_access(deployment_id, deployment, test_vm_script):
